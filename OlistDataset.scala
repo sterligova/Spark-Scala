@@ -71,7 +71,7 @@ val reviews = reviewsWithNull
 
 val mergedDF = mergeDataFrames(reviews, orderItems, products, sellers, orderDelivered)
 
-//Threshold for considering a review as "bad". 
+//Threshold for considering a review as "bad" 
 //Any review with a score equal to or below this threshold will be considered bad.
 val badReviewThreshold = 1 
 
