@@ -1,14 +1,6 @@
 import org.apache.spark.sql.{SparkSession, DataFrame, Dataset, Column}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
-import java.io.File
-import org.apache.spark.sql.Encoders
-import java.util.Locale
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.functions.regexp_replace
-import org.apache.spark.sql.expressions.Window
-import org.apache.parquet.format
-
 
 case class OlistBrazilian(
   product_category_name: String,
@@ -79,7 +71,6 @@ val reviews = reviewsWithNull
 
 val mergedDF = mergeDataFrames(reviews, orderItems, products, sellers, orderDelivered)
 
-
 //Threshold for considering a review as "bad". 
 //Any review with a score equal to or below this threshold will be considered bad.
 val badReviewThreshold = 1 
@@ -87,11 +78,9 @@ val badReviewThreshold = 1
 // Filter with threshold
 val badReviewsDF = mergedDF.filter(col("review_score") <= badReviewThreshold)
 
-
 //Optional, creating a Dataset of type OlistBrazilian from the DataFrame
 import spark.implicits._
   val badReviewsDS = badReviewsDF.as[OlistBrazilian]
-
 
 badReviewsDS.show()
 
