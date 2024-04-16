@@ -42,46 +42,48 @@ def removeNullReviewScoreRows(df: DataFrame): DataFrame = {
   df.na.drop(Seq("review_score"))
 }
 
-
-def mergeDataFrames(reviews: DataFrame, orderItems: DataFrame, products: DataFrame, sellers: DataFrame, orderDelivered: DataFrame): DataFrame = {
-  reviews
-    .join(orderItems, reviews("order_id") === orderItems("order_id"), "left")
-    .join(products, orderItems("product_id") === products("product_id"), "left")
-    .join(sellers, orderItems("seller_id") === sellers("seller_id"), "left")
-    .join(orderDelivered, reviews("order_id") === orderDelivered("order_id"), "left")
-    .select(
-          products("product_category_name"),
-          sellers("seller_id"),
-          sellers("seller_city"),
-          sellers("seller_state"),
-         // reviews("review_id"),
-         // reviews("order_id"),
-          reviews("review_score"),
-         //  reviews("review_comment_title"),
-          reviews("review_comment_message"),
-          reviews("review_creation_date"),
-          orderDelivered("order_delivered_customer_date")
-        )
-}
-
-
-//Delete NULL values from review_score column
-val reviews = reviewsWithNull
-.transform(removeNullReviewScoreRows)
-
-val mergedDF = mergeDataFrames(reviews, orderItems, products, sellers, orderDelivered)
-
-//Threshold for considering a review as "bad" 
+//Threshold for considering a review as "bad". 
 //Any review with a score equal to or below this threshold will be considered bad.
 val badReviewThreshold = 1 
 
-// Filter with threshold
-val badReviewsDF = mergedDF.filter(col("review_score") <= badReviewThreshold)
+//Threshold for considering a review as "bad". 
+//Any review with a score equal to or below this threshold will be considered bad.
+def filterBadReviews(df: DataFrame, threshold: Int): DataFrame = {
+  df.filter(col("review_score") <= threshold)
+}
+
+
+def mergeDataFrames(orderItems: DataFrame, products: DataFrame, sellers: DataFrame, orderDelivered: DataFrame): DataFrame => DataFrame = {
+  (reviews: DataFrame) =>
+    reviews
+      .join(orderItems, reviews("order_id") === orderItems("order_id"), "left")
+      .join(products, orderItems("product_id") === products("product_id"), "left")
+      .join(sellers, orderItems("seller_id") === sellers("seller_id"), "left")
+      .join(orderDelivered, reviews("order_id") === orderDelivered("order_id"), "left")
+      .select(
+        products("product_category_name"),
+        sellers("seller_id"),
+        sellers("seller_city"),
+        sellers("seller_state"),
+        reviews("review_score"),
+        reviews("review_comment_message"),
+        reviews("review_creation_date"),
+        orderDelivered("order_delivered_customer_date")
+      )
+}
+
+
+
+val reviewsResultDF = reviewsWithNull
+.transform(removeNullReviewScoreRows)
+.transform(filterBadReviews(_, badReviewThreshold))
+.transform(mergeDataFrames(orderItems, products, sellers, orderDelivered))
+
+
 
 //Optional, creating a Dataset of type OlistBrazilian from the DataFrame
-import spark.implicits._
-  val badReviewsDS = badReviewsDF.as[OlistBrazilian]
-
-badReviewsDS.show()
+//import spark.implicits._
+//  val badReviewsDS = reviewsResultDF.as[OlistBrazilian]
+//badReviewsDS.show()
 
 }
